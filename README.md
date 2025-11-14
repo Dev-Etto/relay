@@ -1,9 +1,9 @@
 Read this in other languages: [Português (Brasil)](./README.pt-BR.md)
 
-# Surge kit
+# Surge Kit
 
 ![NPM Version](https://img.shields.io/npm/v/surge-kit)
-![Build Status](https://img.shields.io/github/actions/workflow/status/Dev-Etto/surge-kit/.github/workflows/main.yml?branch=main)
+![Build Status](https://img.shields.io/github/actions/workflow/status/Dev-Etto/surge-kit/main.yml?branch=main)
 ![Test Coverage](https://img.shields.io/codecov/c/github/Dev-Etto/surge-kit)
 ![NPM Downloads](https://img.shields.io/npm/dm/surge-kit)
 
@@ -96,6 +96,12 @@ const result = await relay.run(
 ```
 ## 2. Configuration **new Relay(options)**
 You can customize the breaker's behavior in the constructor.
+
+| Option               | Type     | Default | Description                                                                      |
+| -------------------- | -------- | ------- | -------------------------------------------------------------------------------- |
+| `failureThreshold`   | `number` | `5`     | The number of consecutive failures needed to open the circuit.                   |
+| `coolDownPeriod`     | `number` | `30000` | The time in milliseconds the circuit stays `OPEN` before moving to `HALF_OPEN`.  |
+| `executionTimeout`   | `number` | `10000` | The maximum time in milliseconds the function can run before being considered a failure. |
 
 ```ts
 const options = {

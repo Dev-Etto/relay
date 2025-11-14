@@ -3,7 +3,7 @@ Leia isto em outros idiomas: [English](./README.md)
 # Surge Kit
 
 ![NPM Version](https://img.shields.io/npm/v/surge-kit)
-![Build Status](https://img.shields.io/github/actions/workflow/status/Dev-Etto/surge-kit/.github/main.yml?branch=main)
+![Build Status](https://img.shields.io/github/actions/workflow/status/Dev-Etto/surge-kit/main.yml?branch=main)
 ![Test Coverage](https://img.shields.io/codecov/c/github/Dev-Etto/surge-kit)
 ![NPM Downloads](https://img.shields.io/npm/dm/surge-kit)
 
@@ -96,6 +96,12 @@ const resultado = await relay.run(
 ```
 ## 2. Configuração new Relay(options)
 Você pode personalizar o comportamento do disjuntor no construtor.
+
+| Option               | Type     | Default | Descrição                                                                                |
+| -------------------- | -------- | ------- | ---------------------------------------------------------------------------------------- |
+| `failureThreshold`   | `number` | `5`     | O número de falhas consecutivas necessário para abrir o circuito.                        |
+| `coolDownPeriod`     | `number` | `30000` | O tempo em milissegundos que o circuito permanece `OPEN` antes de ir para `HALF_OPEN`.   |
+| `executionTimeout`   | `number` | `10000` | O tempo máximo em milissegundos que a função pode executar antes de ser considerada uma falha. |
 
 ```ts
 const options = {
