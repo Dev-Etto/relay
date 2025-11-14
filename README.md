@@ -136,6 +136,6 @@ relay.on(RelayEvents.FAILURE, (error) => {
 ```
 
 ## 📜 License
-Distributed under the [Licença MIT](LICENSE).
+Distributed under the [MIT License](LICENSE).
 
 Copyright (c) 2025 João Neto - [DevEtto](https://github.com/Dev-Etto).

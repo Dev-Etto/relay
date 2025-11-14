@@ -17,7 +17,7 @@ The project maintainer (João Neto)[https://github.com/Dev-Etto] reserves the ri
 ### Reporting Bugs (Issues)
 
 * Check if the issue already exists [here](https://github.com/Dev-Etto/surge-kit/issues).
-* Clearly describe the bug, including steps to reproduce it, your Node.js version, and the `relay` version.
+* Clearly describe the bug, including steps to reproduce it, your Node.js version, and the `surge-kit` version.
 
 ### Suggesting Enhancements
 
