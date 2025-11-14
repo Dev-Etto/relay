@@ -89,12 +89,12 @@ class ApiClient {
 const apiClient = new ApiClient('sk_123');
 
 // Use .bind(apiClient) to "bind" the context
-const result = await breaker.exec(
+const result = await relay.run(
   apiClient.fetchApi.bind(apiClient), 
   { value: 100 } // 'data' argument
 );
 ```
-## 2. Configuration new CircuitBreaker(options)
+## 2. Configuration new Relay(options)
 You can customize the breaker's behavior in the constructor.
 
 ```ts
@@ -109,28 +109,28 @@ const options = {
   executionTimeout: 5000, 
 };
 
-const breaker = new CircuitBreaker(options);
+const breaker = new Relay(options);
 ```
 
 ## 3. Observability (Events)
-**CircuitBreaker** extends **EventEmitter**. You can listen for events to log and monitor the circuit's state.
+**Relay** extends **EventEmitter**. You can listen for events to log and monitor the circuit's state.
 
 ```ts
-import { CircuitEvents } from 'relay';
+import { RelayEvents } from 'relay';
 
-breaker.on(CircuitEvents.OPEN, (error) => {
+breaker.on(RelayEvents.OPEN, (error) => {
   logger.error(' CIRCUIT OPEN. Calls will be blocked.', error);
 });
 
-breaker.on(CircuitEvents.CLOSE, () => {
+breaker.on(RelayEvents.CLOSE, () => {
   logger.info(' CIRCUIT CLOSED. Calls are back to normal.');
 });
 
-breaker.on(CircuitEvents.HALF_OPEN, () => {
+breaker.on(RelayEvents.HALF_OPEN, () => {
   logger.warn(' CIRCUIT HALF-OPEN. Testing the next call.');
 });
 
-breaker.on(CircuitEvents.FAILURE, (error) => {
+breaker.on(RelayEvents.FAILURE, (error) => {
   logger.warn('Call failed (Circuit Breaker)', error.message);
 });
 ```

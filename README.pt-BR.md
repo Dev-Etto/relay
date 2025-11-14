@@ -89,12 +89,12 @@ class ApiClient {
 const apiClient = new ApiClient('sk_123');
 
 // Use .bind(apiClient) para "grudar" o contexto
-const resultado = await breaker.exec(
+const resultado = await relay.run(
   apiClient.chamarApi.bind(apiClient), 
   { valor: 100 } // argumento 'dados'
 );
 ```
-## 2. Configuração new CircuitBreaker(options)
+## 2. Configuração new Relay(options)
 Você pode personalizar o comportamento do disjuntor no construtor.
 
 ```ts
@@ -109,28 +109,28 @@ const options = {
   executionTimeout: 5000, 
 };
 
-const breaker = new CircuitBreaker(options);
+const breaker = new Relay(options);
 ```
 
 ## 3. Observabilidade (Eventos)
-O **CircuitBreaker** herda de **EventEmitter**. Você pode ouvir eventos para logar e monitorar o estado do circuito.
+O **Relay** herda de **EventEmitter**. Você pode ouvir eventos para logar e monitorar o estado do circuito.
 
 ```ts
-import { CircuitEvents } from 'relay';
+import { RelayEvents } from 'relay';
 
-breaker.on(CircuitEvents.OPEN, (error) => {
+breaker.on(RelayEvents.OPEN, (error) => {
   logger.error(' CIRCUITO ABERTO. As chamadas serão bloqueadas.', error);
 });
 
-breaker.on(CircuitEvents.CLOSE, () => {
+breaker.on(RelayEvents.CLOSE, () => {
   logger.info(' CIRCUITO FECHADO. As chamadas voltaram ao normal.');
 });
 
-breaker.on(CircuitEvents.HALF_OPEN, () => {
+breaker.on(RelayEvents.HALF_OPEN, () => {
   logger.warn(' CIRCUITO MEIO-ABERTO. Testando a próxima chamada.');
 });
 
-breaker.on(CircuitEvents.FAILURE, (error) => {
+breaker.on(RelayEvents.FAILURE, (error) => {
   logger.warn('Falha na chamada (Circuit Breaker)', error.message);
 });
 ```
