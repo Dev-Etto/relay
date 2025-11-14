@@ -1,19 +1,19 @@
 import { EventEmitter } from 'events';
 import {
-  CircuitBreakerOptions,
-  CircuitEvents,
-  CircuitState,
+  RelayOptions,
+  RelayEvents,
+  RelayState,
 } from './types';
-import { CircuitOpenError } from './errors';
+import { RelayOpenError } from './errors';
 
-export class CircuitBreaker extends EventEmitter {
-  #state: CircuitState = CircuitState.CLOSED;
+export class Relay extends EventEmitter {
+  #state: RelayState = RelayState.CLOSED;
   #failureCount: number = 0;
   #lastFailureTime: number = 0;
   #coolDownTimer: NodeJS.Timeout | null = null;
-  readonly #options: Required<CircuitBreakerOptions>;
+  readonly #options: Required<RelayOptions>;
 
-  constructor(options: CircuitBreakerOptions = {}) {
+  constructor(options: RelayOptions = {}) {
     super();
 
     this.#options = {
@@ -24,20 +24,20 @@ export class CircuitBreaker extends EventEmitter {
   }
 
   /**
-   * Executes a function protected by the Circuit Breaker.
+   * Executes a function protected by the Relay.
    * @param fn The asynchronous function to be executed.
    * @param args Arguments to be passed to the function.
    */
-  public async exec<T extends (...args: any[]) => Promise<any>>(
+  public async run<T extends (...args: any[]) => Promise<any>>(
     fn: T,
     ...args: Parameters<T>
   ): Promise<ReturnType<T>> {
-    if (this.#state === CircuitState.OPEN) {
-      throw new CircuitOpenError();
+    if (this.#state === RelayState.OPEN) {
+      throw new RelayOpenError();
     }
 
     try {
-      const result = await this.#executeWithTimeout(fn, args);
+      const result = await this.#runWithTimeout(fn, args);
 
       this.#handleSuccess();
 
@@ -55,11 +55,11 @@ export class CircuitBreaker extends EventEmitter {
   #handleSuccess() {
     this.#failureCount = 0;
 
-    if (this.#state === CircuitState.HALF_OPEN) {
+    if (this.#state === RelayState.HALF_OPEN) {
       this.#close();
     }
 
-    this.emit(CircuitEvents.SUCCESS);
+    this.emit(RelayEvents.SUCCESS);
   }
 
   /**
@@ -67,11 +67,11 @@ export class CircuitBreaker extends EventEmitter {
    */
   #handleFailure(error: Error) {
     this.#failureCount++;
-    this.emit(CircuitEvents.FAILURE, error);
+    this.emit(RelayEvents.FAILURE, error);
 
     if (
       this.#failureCount >= this.#options.failureThreshold &&
-      this.#state !== CircuitState.OPEN
+      this.#state !== RelayState.OPEN
     ) {
       this.#open(error);
     }
@@ -80,7 +80,7 @@ export class CircuitBreaker extends EventEmitter {
   /**
    * Executes the user's function, racing against a timeout.
    */
-  #executeWithTimeout<T extends (...args: any[]) => Promise<any>>(
+  #runWithTimeout<T extends (...args: any[]) => Promise<any>>(
     fn: T,
     args: Parameters<T>
   ): Promise<ReturnType<T>> {
@@ -96,12 +96,12 @@ export class CircuitBreaker extends EventEmitter {
   }
 
   /**
-   * Opens the circuit (changes state to OPEN) and schedules the cooldown.
+   * Opens the relay (changes state to OPEN) and schedules the cooldown.
    */
   #open(error: Error) {
-    this.#state = CircuitState.OPEN;
+    this.#state = RelayState.OPEN;
     this.#lastFailureTime = Date.now();
-    this.emit(CircuitEvents.OPEN, error);
+    this.emit(RelayEvents.OPEN, error);
 
     this.#coolDownTimer = setTimeout(() => {
       this.#halfOpen();
@@ -109,10 +109,10 @@ export class CircuitBreaker extends EventEmitter {
   }
 
   /**
-   * Closes the circuit (changes state to CLOSED).
+   * Closes the relay (changes state to CLOSED).
    */
   #close() {
-    this.#state = CircuitState.CLOSED;
+    this.#state = RelayState.CLOSED;
     this.#failureCount = 0;
 
     if (this.#coolDownTimer) {
@@ -121,19 +121,19 @@ export class CircuitBreaker extends EventEmitter {
       this.#coolDownTimer = null;
     }
 
-    this.emit(CircuitEvents.CLOSE);
+    this.emit(RelayEvents.CLOSE);
   }
 
   /**
    * Enters the half-open state to test the service.
    */
   #halfOpen() {
-    this.#state = CircuitState.HALF_OPEN;
+    this.#state = RelayState.HALF_OPEN;
 
-    this.emit(CircuitEvents.HALF_OPEN);
+    this.emit(RelayEvents.HALF_OPEN);
   }
 
-  public get state(): CircuitState {
+  public get state(): RelayState {
     return this.#state;
   }
 

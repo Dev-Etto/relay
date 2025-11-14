@@ -1,4 +1,4 @@
-export { CircuitBreaker } from './circuit-breaker';
-export { CircuitOpenError } from './errors';
-export { CircuitState, CircuitEvents } from './types';
-export type { CircuitBreakerOptions, CircuitState as ICircuitState } from './types';
+export { Relay } from './relay';
+export { RelayOpenError } from './errors';
+export { RelayState, RelayEvents } from './types';
+export type { RelayOptions, RelayState as IRelayState } from './types';

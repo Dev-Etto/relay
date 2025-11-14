@@ -1,9 +1,9 @@
 /**
- * Error thrown when an execution is attempted while the circuit is OPEN.
+ * Error thrown when an execution is attempted while the relay is OPEN.
  */
-export class CircuitOpenError extends Error {
+export class RelayOpenError extends Error {
   constructor() {
-    super('Circuit is open. Call was not attempted.');
-    this.name = 'CircuitOpenError';
+    super('Relay is open. Call was not attempted.');
+    this.name = 'RelayOpenError';
   }
 }

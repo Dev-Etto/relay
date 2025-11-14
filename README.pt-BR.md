@@ -29,10 +29,10 @@ npm install reley
 
 ## 🚀 Uso Rápido
 ```ts
-import { CircuitBreaker, CircuitOpenError } from 'relay';
+import { Relay, RelayOpenError } from 'relay';
 
 // 1. Crie uma instância
-const breaker = new CircuitBreaker();
+const relay = new Relay();
 
 // 2. Defina sua função assíncrona
 async function calcularFrete(cep) {
@@ -41,12 +41,12 @@ async function calcularFrete(cep) {
 
 // 3. Execute sua função protegida
 try {
-  const frete = await breaker.exec(calcularFrete, '01001-000');
+  const frete = await relay.run(calcularFrete, '01001-000');
   console.log('Frete:', frete);
 
 } catch (error) {
   // 4. Trate erros de circuito aberto
-  if (error instanceof CircuitOpenError) {
+  if (error instanceof RelayOpenError) {
     console.warn('Serviço de frete indisponível, falha rápida.');
   } else {
     console.error('Falha na chamada:', error.message);
@@ -56,7 +56,7 @@ try {
 
 ## 📚 API e Padrões de Uso
 
-1. `exec(fn, ...args)`
+1. `run(fn, ...args)`
 
 ## Este é o método principal. Ele recebe a função a ser executada e repassa todos os argumentos subsequentes para ela.
 
@@ -69,7 +69,7 @@ async function buscarUsuario(id) {
 }
 
 // O segundo argumento (123) é passado como 'id' para buscarUsuario
-const usuario = await breaker.exec(buscarUsuario, 123);
+const usuario = await relay.run(buscarUsuario, 123);
 ```
 
 ## Com um Método de Classe
@@ -103,7 +103,7 @@ const options = {
   failureThreshold: 3, 
   
   // 10s de cooldown antes de tentar de novo (Default: 30000ms)
-  cooldownPeriod: 10000, 
+  coolDownPeriod: 10000, 
   
   // Timeout de 5s para a execução da função (Default: 10000ms)
   executionTimeout: 5000, 

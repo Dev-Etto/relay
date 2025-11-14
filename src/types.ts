@@ -1,18 +1,18 @@
 /**
- * Possible states of the Circuit Breaker.
+ * Possible states of the Relay.
  */
-export const CircuitState = {
+export const RelayState = {
   CLOSED: 'CLOSED',
   OPEN: 'OPEN',
   HALF_OPEN: 'HALF_OPEN',
 } as const;
 
-export type CircuitState = (typeof CircuitState)[keyof typeof CircuitState];
+export type RelayState = (typeof RelayState)[keyof typeof RelayState];
 
 /**
- * Events emitted by the Circuit Breaker instance.
+ * Events emitted by the Relay instance.
  */
-export const CircuitEvents = {
+export const RelayEvents = {
   OPEN: 'open',
   CLOSE: 'close',
   HALF_OPEN: 'halfOpen',
@@ -20,15 +20,15 @@ export const CircuitEvents = {
   FAILURE: 'failure',
 } as const;
 
-export interface CircuitBreakerOptions {
+export interface RelayOptions {
   /**
-   * The number of consecutive failures before opening the circuit.
+   * The number of consecutive failures before opening the relay.
    * @default 5
    */
   failureThreshold?: number;
 
   /**
-   * The time in milliseconds the circuit stays OPEN before transitioning to HALF_OPEN.
+   * The time in milliseconds the relay stays OPEN before transitioning to HALF_OPEN.
    * @default 30000 (30s)
    */
   coolDownPeriod?: number;

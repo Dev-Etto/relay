@@ -29,10 +29,10 @@ npm install relay
 
 ## 🚀 Quick Start
 ```ts
-import { CircuitBreaker, CircuitOpenError } from 'relay';
+import { Relay, RelayOpenError } from 'relay';
 
 // 1. Create an instance
-const breaker = new CircuitBreaker();
+const relay = new Relay();
 
 // 2. Define your asynchronous function
 async function calculateShipping(zipCode) {
@@ -41,12 +41,12 @@ async function calculateShipping(zipCode) {
 
 // 3. Execute your protected function
 try {
-  const shippingCost = await breaker.exec(calculateShipping, '01001-000');
+  const shippingCost = await relay.run(calculateShipping, '01001-000');
   console.log('Shipping:', shippingCost);
 
 } catch (error) {
   // 4. Handle open-circuit errors
-  if (error instanceof CircuitOpenError) {
+  if (error instanceof RelayOpenError) {
     console.warn('Shipping service unavailable, failing fast.');
   } else {
     console.error('Call failed:', error.message);
@@ -56,7 +56,7 @@ try {
 
 ## 📚 API and Usage Patterns
 
-1. `exec(fn, ...args)`
+1. `run(fn, ...args)`
 
 ## This is the main method. It receives the function to be executed and passes all subsequent arguments to it.
 
@@ -69,7 +69,7 @@ async function findUser(id) {
 }
 
 // The second argument (123) is passed as 'id' to findUser
-const user = await breaker.exec(findUser, 123);
+const user = await relay.run(findUser, 123);
 ```
 
 ## With a Class Method
@@ -103,7 +103,7 @@ const options = {
   failureThreshold: 3, 
   
   // 10s cooldown before retrying (Default: 30000ms)
-  cooldownPeriod: 10000, 
+  coolDownPeriod: 10000, 
   
   // 5s timeout for the function execution (Default: 10000ms)
   executionTimeout: 5000, 
