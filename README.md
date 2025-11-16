@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/surge-kit-banner.png" alt="Surge Kit Banner" width="500">
+</p>
+
 Read this in other languages: [Português (Brasil)](./README.pt-BR.md)
 
 # Surge Kit
