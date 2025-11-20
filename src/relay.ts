@@ -9,6 +9,8 @@ import {
 import { RelayOpenError } from './errors';
 
 export class Relay<TFallback = any> extends EventEmitter {
+  private static defaultInstance: Relay | null = null;
+
   #failureCount = 0;
   #lastFailureTime = 0;
   #successCount = 0;
@@ -19,6 +21,7 @@ export class Relay<TFallback = any> extends EventEmitter {
   #coolDownTimer: NodeJS.Timeout | null = null;
 
   readonly #options: InternalOptions<TFallback>;
+  #fallbackRegistry = new Map<Function, Function>();
 
   constructor(options: RelayOptions<TFallback> = {}) {
     super();
@@ -30,7 +33,62 @@ export class Relay<TFallback = any> extends EventEmitter {
       useExponentialBackoff: options.useExponentialBackoff ?? false,
       maxCooldown: options.maxCooldown ?? 600000,
       onFallback: (options.onFallback as any) ?? null,
-    };}
+    };
+  }
+
+  /**
+   * Sets the default Relay instance to be used by decorators when no instance is provided.
+   * @param instance The Relay instance to set as default.
+   */
+  public static setDefault(instance: Relay): void {
+    Relay.defaultInstance = instance;
+  }
+
+  /**
+   * Gets the default Relay instance.
+   * @throws Error if no default instance has been set.
+   * @returns The default Relay instance.
+   */
+  public static getDefault(): Relay {
+    if (!Relay.defaultInstance) {
+      throw new Error(
+        'No default Relay instance set. Use Relay.setDefault() first or provide a Relay instance to the decorator.'
+      );
+    }
+    return Relay.defaultInstance;
+  }
+
+  /**
+   * Clears the default Relay instance.
+   * Useful for test cleanup to avoid state pollution between tests.
+   */
+  public static clearDefault(): void {
+    Relay.defaultInstance = null;
+  }
+
+  /**
+   * Registers a primary implementation and its fallback.
+   * Useful when you can't use decorators.
+   * @param name A name for this registration (for logging/debugging).
+   * @param primary The primary object or function.
+   * @param fallback The fallback object or function.
+   */
+  public register(name: string, primary: any, fallback: any) {
+    if (typeof primary === 'function' && typeof fallback === 'function') {
+      this.#fallbackRegistry.set(primary, fallback);
+    } else if (typeof primary === 'object' && typeof fallback === 'object') {
+      const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(primary));
+      for (const method of methods) {
+        if (
+          method !== 'constructor' &&
+          typeof primary[method] === 'function' &&
+          typeof fallback[method] === 'function'
+        ) {
+          this.#fallbackRegistry.set(primary[method], fallback[method]);
+        }
+      }
+    }
+  }
 
   /**
    * Executes a function protected by the Relay.
@@ -44,6 +102,11 @@ export class Relay<TFallback = any> extends EventEmitter {
 
     if (this.#state === RelayState.OPEN) {
       const openError = new RelayOpenError();
+
+      const registeredFallback = this.#fallbackRegistry.get(fn);
+      if (registeredFallback) {
+        return registeredFallback(openError, ...args);
+      }
 
       if (this.#options.onFallback) {
         return this.#options.onFallback(openError);
@@ -59,6 +122,11 @@ export class Relay<TFallback = any> extends EventEmitter {
     } catch (error) {
 
       this.#handleFailure(error as Error);
+
+      const registeredFallback = this.#fallbackRegistry.get(fn);
+      if (registeredFallback) {
+        return registeredFallback(error, ...args);
+      }
 
       if (this.#options.onFallback) {
         return this.#options.onFallback(error as Error);
