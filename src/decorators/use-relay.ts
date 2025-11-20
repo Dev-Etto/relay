@@ -63,12 +63,15 @@ export function UseRelay(relay?: Relay): any {
       
       if (methodDescriptor && typeof methodDescriptor.value === 'function') {
         const originalMethod = methodDescriptor.value;
+        const isAsync = originalMethod.constructor.name === 'AsyncFunction';
 
-        methodDescriptor.value = async function (...args: any[]) {
-          return relayInstance.run(originalMethod.bind(this), ...args);
-        };
+        if (isAsync) {
+          methodDescriptor.value = async function (...args: any[]) {
+            return relayInstance.run(originalMethod.bind(this), ...args);
+          };
 
-        Object.defineProperty(prototype, methodName, methodDescriptor);
+          Object.defineProperty(prototype, methodName, methodDescriptor);
+        }
       }
     }
 

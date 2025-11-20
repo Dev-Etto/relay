@@ -372,4 +372,55 @@ describe('Class-level @UseRelay', () => {
     const service = new TestService();
     await expect(service.riskyMethod()).resolves.toBe('fallback-executed');
   });
+  it('should NOT wrap synchronous methods when applied to a class', () => {
+    @UseRelay(relay)
+    class TestService {
+      syncMethod() {
+        return 'sync-result';
+      }
+      
+      async asyncMethod() {
+        return 'async-result';
+      }
+    }
+
+    const service = new TestService();
+    
+    // Synchronous method should return value directly, not a Promise
+    const result = service.syncMethod();
+    expect(result).toBe('sync-result');
+    
+    // Async method should be wrapped and return a Promise
+    expect(service.asyncMethod()).toBeInstanceOf(Promise);
+  });
+
+  it('should instantiate fallback class only once per instance', async () => {
+    let constructorCount = 0;
+
+    class FallbackService {
+      constructor() {
+        constructorCount++;
+      }
+      async getData() {
+        return 'fallback';
+      }
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      async getData() {
+        throw new Error('fail');
+      }
+    }
+
+    const service = new PrimaryService();
+    
+    // First failure
+    await service.getData();
+    expect(constructorCount).toBe(1);
+
+    // Second failure
+    await service.getData();
+    expect(constructorCount).toBe(1);
+  });
 });

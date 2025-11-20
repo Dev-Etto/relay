@@ -80,11 +80,10 @@ export class Relay<TFallback = any> extends EventEmitter {
   /**
    * Registers a primary implementation and its fallback.
    * Useful when you can't use decorators.
-   * @param name A name for this registration (for logging/debugging).
    * @param primary The primary object or function.
    * @param fallback The fallback object or function.
    */
-  public register(name: string, primary: any, fallback: any) {
+  public register(primary: any, fallback: any) {
     if (typeof primary === 'function' && typeof fallback === 'function') {
       this.#fallbackRegistry.set(primary, fallback);
     } else if (typeof primary === 'object' && typeof fallback === 'object') {
@@ -113,17 +112,7 @@ export class Relay<TFallback = any> extends EventEmitter {
 
     if (this.#state === RelayState.OPEN) {
       const openError = new RelayOpenError();
-
-      const registeredFallback = this.#fallbackRegistry.get(fn);
-      if (registeredFallback) {
-        return registeredFallback(openError, ...args);
-      }
-
-      if (this.#options.onFallback) {
-        return this.#options.onFallback(openError);
-      }
-
-      throw openError;
+      return this.#executeFallback(fn, openError, args);
     }
 
     try {
@@ -131,19 +120,8 @@ export class Relay<TFallback = any> extends EventEmitter {
       this.#handleSuccess();
       return result;
     } catch (error) {
-
       this.#handleFailure(error as Error);
-
-      const registeredFallback = this.#fallbackRegistry.get(fn);
-      if (registeredFallback) {
-        return registeredFallback(error, ...args);
-      }
-
-      if (this.#options.onFallback) {
-        return this.#options.onFallback(error as Error);
-      }
-
-      throw error;
+      return this.#executeFallback(fn, error as Error, args);
     }
   }
 
@@ -194,6 +172,26 @@ export class Relay<TFallback = any> extends EventEmitter {
     });
 
     return Promise.race([executionPromise, timeoutPromise]);
+  }
+
+  /**
+   * Executes the fallback logic if available.
+   */
+  async #executeFallback(
+    fn: (...args: any[]) => any,
+    error: Error,
+    args: any[]
+  ): Promise<any> {
+    const registeredFallback = this.#fallbackRegistry.get(fn);
+    if (registeredFallback) {
+      return registeredFallback(error, ...args);
+    }
+
+    if (this.#options.onFallback) {
+      return this.#options.onFallback(error);
+    }
+
+    throw error;
   }
 
   /**

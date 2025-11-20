@@ -232,7 +232,7 @@ const fallback = {
 };
 
 // Registers fallback.getData as the fallback for primary.getData
-relay.register('data-service', primary, fallback);
+relay.register(primary, fallback);
 
 // When you run primary.getData, it will use the fallback on failure
 const result = await relay.run(primary.getData); // Returns 'Cached Data'

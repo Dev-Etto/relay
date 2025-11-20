@@ -23,7 +23,13 @@ export function FallbackClass<T extends { new (...args: any[]): {} }>(
           try {
             return await originalMethod.apply(this, args);
           } catch (error) {
-            const fallbackInstance = new FallbackClass();
+            const fallbackInstanceSymbol = Symbol.for('fallbackInstance');
+            
+            if (!(this as any)[fallbackInstanceSymbol]) {
+              (this as any)[fallbackInstanceSymbol] = new FallbackClass();
+            }
+            
+            const fallbackInstance = (this as any)[fallbackInstanceSymbol];
             
             const fallbackMethod = (fallbackInstance as any)[methodName];
             

@@ -232,7 +232,7 @@ const fallback = {
 };
 
 // Registra fallback.getData como o fallback para primario.getData
-relay.register('servico-dados', primario, fallback);
+relay.register(primario, fallback);
 
 // Quando você executa primario.getData, ele usará o fallback em caso de falha
 const resultado = await relay.run(primario.getData); // Retorna 'Dados em Cache'

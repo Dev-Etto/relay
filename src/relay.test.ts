@@ -325,7 +325,7 @@ describe('Relay Register', () => {
     const primary = jest.fn(async () => { throw new Error('fail'); });
     const fallback = jest.fn(async () => 'fallback');
 
-    relay.register('test', primary, fallback);
+    relay.register(primary, fallback);
 
     await expect(relay.run(primary)).resolves.toBe('fallback');
     expect(fallback).toHaveBeenCalled();
@@ -342,7 +342,7 @@ describe('Relay Register', () => {
     const p = new Primary();
     const f = new Fallback();
 
-    relay.register('test-obj', p, f);
+    relay.register(p, f);
     
     await expect(relay.run(p.exec)).resolves.toBe('fallback');
   });
