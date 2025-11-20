@@ -1,9 +1,43 @@
 /**
  * Class decorator to define a fallback class.
- * When used with @RelayClass, if the primary class methods fail,
+ * When used with @RelayClass or @UseRelay, if the primary class methods fail,
  * the corresponding methods from the fallback class will be called.
  * 
  * @param FallbackClass The fallback class constructor.
+ * 
+ * @remarks
+ * This decorator wraps all methods (both synchronous and asynchronous) with fallback logic
+ * while preserving their original behavior:
+ * - Synchronous methods remain synchronous
+ * - Asynchronous methods (or methods returning Promises) remain asynchronous
+ * 
+ * @example
+ * ```typescript
+ * class FallbackApi {
+ *   getData(error: Error) {
+ *     return 'cached data';
+ *   }
+ *   
+ *   async fetchData(error: Error) {
+ *     return 'cached async data';
+ *   }
+ * }
+ * 
+ * @FallbackClass(FallbackApi)
+ * class PrimaryApi {
+ *   getData() {
+ *     throw new Error('fail');
+ *   }
+ *   
+ *   async fetchData() {
+ *     throw new Error('fail');
+ *   }
+ * }
+ * 
+ * const api = new PrimaryApi();
+ * api.getData();      // Returns 'cached data' (sync)
+ * await api.fetchData(); // Returns 'cached async data' (async)
+ * ```
  */
 export function FallbackClass<T extends { new (...args: any[]): {} }>(
   FallbackClass: T
@@ -19,34 +53,50 @@ export function FallbackClass<T extends { new (...args: any[]): {} }>(
       const descriptor = Object.getOwnPropertyDescriptor(prototype, methodName);
       if (descriptor && typeof descriptor.value === 'function') {
         const originalMethod = descriptor.value;
-        const isAsync = originalMethod.constructor.name === 'AsyncFunction';
 
-        if (isAsync) {
-          descriptor.value = async function (...args: any[]) {
-            try {
-              return await originalMethod.apply(this, args);
-            } catch (error) {
-              if (!(this as any)[fallbackInstanceSymbol]) {
-                (this as any)[fallbackInstanceSymbol] = new FallbackClass();
-              }
-              
-              const fallbackInstance = (this as any)[fallbackInstanceSymbol];
-              
-              const fallbackMethod = (fallbackInstance as any)[methodName];
-              
-              if (typeof fallbackMethod === 'function') {
-                return fallbackMethod.call(fallbackInstance, error, ...args);
-              }
-              
-              throw error;
+        descriptor.value = function (...args: any[]) {
+          const getFallback = () => {
+            if (!(this as any)[fallbackInstanceSymbol]) {
+              (this as any)[fallbackInstanceSymbol] = new FallbackClass();
             }
+            const fallbackInstance = (this as any)[fallbackInstanceSymbol];
+            return {
+              instance: fallbackInstance,
+              method: (fallbackInstance as any)[methodName],
+            };
           };
 
-          Object.defineProperty(prototype, methodName, descriptor);
-        }
+          try {
+            const result = originalMethod.apply(this, args);
+
+            // If the result is a Promise, handle async failures
+            if (result && typeof result.then === 'function') {
+              return (result as Promise<any>).catch((error: any) => {
+                const { instance, method } = getFallback();
+                if (typeof method === 'function') {
+                  return method.call(instance, error, ...args);
+                }
+                throw error;
+              });
+            }
+
+            // Otherwise, return the synchronous result
+            return result;
+          } catch (error) {
+            // Handle synchronous failures
+            const { instance, method } = getFallback();
+            if (typeof method === 'function') {
+              return method.call(instance, error, ...args);
+            }
+            throw error;
+          }
+        };
+
+        Object.defineProperty(prototype, methodName, descriptor);
       }
     }
 
     return constructor;
   };
 }
+

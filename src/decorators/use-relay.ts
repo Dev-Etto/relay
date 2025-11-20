@@ -8,8 +8,19 @@ import { Relay } from '../relay';
  * 
  * When applied to a class:
  * - Wraps all async methods in the class with relay.run()
+ * - Only methods explicitly declared with `async` keyword are protected
+ * - Synchronous methods are not wrapped to preserve their return type
  * 
  * @param relay Optional Relay instance. If not provided, uses Relay.getDefault().
+ * 
+ * @remarks
+ * **Important Limitation (Class-level decoration):**
+ * The decorator detects async methods by checking if they are declared with the `async` keyword.
+ * Methods that return a Promise but are not declared as `async` will NOT be protected.
+ * This is by design to avoid converting synchronous methods into asynchronous ones.
+ * 
+ * If you need to protect a method that returns a Promise but is not declared as `async`,
+ * apply `@UseRelay` directly to that method instead of at the class level.
  * 
  * @example
  * // Method decoration
@@ -22,8 +33,14 @@ import { Relay } from '../relay';
  * // Class decoration
  * @UseRelay(myRelay)
  * class ApiService {
- *   async method1() { ... } // Protected
- *   async method2() { ... } // Protected
+ *   async method1() { ... } // ✓ Protected
+ *   async method2() { ... } // ✓ Protected
+ *   syncMethod() { ... }    // ✓ Not wrapped (preserves sync behavior)
+ *   
+ *   // ⚠️ NOT protected at class level (not declared as async)
+ *   promiseMethod() {
+ *     return Promise.resolve('data');
+ *   }
  * }
  * 
  * @example
@@ -33,6 +50,15 @@ import { Relay } from '../relay';
  * @UseRelay() // No argument needed
  * class ApiService {
  *   async fetchData() { ... }
+ * }
+ * 
+ * @example
+ * // Protecting a promise-returning method (not async)
+ * class ApiService {
+ *   @UseRelay(myRelay) // Apply decorator directly to the method
+ *   promiseMethod() {
+ *     return Promise.resolve('data');
+ *   }
  * }
  */
 export function UseRelay(relay?: Relay): any {

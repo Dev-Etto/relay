@@ -487,6 +487,137 @@ describe('Class-level @UseRelay', () => {
     const service = new PrimaryService();
     await expect(service.getData()).rejects.toThrow('original-error');
   });
+
+  it('should handle synchronous methods with @FallbackClass', () => {
+    class FallbackService {
+      getData(_error: Error, value: number) {
+        return value * 10; // Fallback returns 10x
+      }
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      getData(value: number) {
+        if (value < 0) {
+          throw new Error('negative-value');
+        }
+        return value * 2;
+      }
+    }
+
+    const service = new PrimaryService();
+    
+    // Should work normally for valid input
+    const result = service.getData(5);
+    expect(result).toBe(10);
+    expect(result).not.toBeInstanceOf(Promise);
+    
+    // Should use fallback synchronously on error
+    const fallbackResult = service.getData(-1);
+    expect(fallbackResult).toBe(-10);
+    expect(fallbackResult).not.toBeInstanceOf(Promise);
+  });
+
+  it('should handle async methods with @FallbackClass', async () => {
+    class FallbackService {
+      async getData(_error: Error, value: number) {
+        return value * 10;
+      }
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      async getData(value: number) {
+        if (value < 0) {
+          throw new Error('negative-value');
+        }
+        return value * 2;
+      }
+    }
+
+    const service = new PrimaryService();
+    
+    // Should work normally for valid input
+    await expect(service.getData(5)).resolves.toBe(10);
+    
+    // Should use fallback on error
+    await expect(service.getData(-1)).resolves.toBe(-10);
+  });
+
+  it('should handle promise-returning methods with @FallbackClass', async () => {
+    class FallbackService {
+      getData(_error: Error, value: number) {
+        return Promise.resolve(value * 10);
+      }
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      getData(value: number) {
+        if (value < 0) {
+          return Promise.reject(new Error('negative-value'));
+        }
+        return Promise.resolve(value * 2);
+      }
+    }
+
+    const service = new PrimaryService();
+    
+    // Should work normally for valid input
+    await expect(service.getData(5)).resolves.toBe(10);
+    
+    // Should use fallback on error
+    await expect(service.getData(-1)).resolves.toBe(-10);
+  });
+
+  it('should handle mixed sync and async methods with @FallbackClass', async () => {
+    class FallbackService {
+      syncMethod(_error: Error) {
+        return 'sync-fallback';
+      }
+
+      async asyncMethod(_error: Error) {
+        return 'async-fallback';
+      }
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      syncMethod() {
+        throw new Error('sync-fail');
+      }
+
+      async asyncMethod() {
+        throw new Error('async-fail');
+      }
+    }
+
+    const service = new PrimaryService();
+    
+    // Sync method should use fallback synchronously
+    const syncResult = service.syncMethod();
+    expect(syncResult).toBe('sync-fallback');
+    expect(syncResult).not.toBeInstanceOf(Promise);
+    
+    // Async method should use fallback asynchronously
+    await expect(service.asyncMethod()).resolves.toBe('async-fallback');
+  });
+
+  it('should throw original error if fallback method does not exist for sync method', () => {
+    class FallbackService {
+      // No getData method
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      getData() {
+        throw new Error('sync-error');
+      }
+    }
+
+    const service = new PrimaryService();
+    expect(() => service.getData()).toThrow('sync-error');
+  });
 });
 
 describe('Fallback Decorator Edge Cases', () => {
@@ -512,5 +643,85 @@ describe('Fallback Decorator Edge Cases', () => {
 
     const service = new TestService();
     await expect(service.failMethod()).rejects.toThrow('fail');
+  });
+
+  it('should preserve synchronous behavior for sync methods', () => {
+    class TestService {
+      @Fallback('fallbackMethod')
+      syncMethod(value: number) {
+        if (value < 0) {
+          throw new Error('negative');
+        }
+        return value * 2;
+      }
+
+      fallbackMethod(_error: Error, _value: number) {
+        return 0;
+      }
+    }
+
+    const service = new TestService();
+    
+    // Should return synchronously (not a Promise)
+    const result = service.syncMethod(5);
+    expect(result).toBe(10);
+    expect(result).not.toBeInstanceOf(Promise);
+    
+    // Should use fallback synchronously on error
+    const fallbackResult = service.syncMethod(-1);
+    expect(fallbackResult).toBe(0);
+    expect(fallbackResult).not.toBeInstanceOf(Promise);
+  });
+
+  it('should handle async methods with @Fallback', async () => {
+    class TestService {
+      @Fallback('fallbackMethod')
+      async asyncMethod(value: number) {
+        if (value < 0) {
+          throw new Error('negative');
+        }
+        return value * 2;
+      }
+
+      async fallbackMethod(_error: Error, _value: number) {
+        return 0;
+      }
+    }
+
+    const service = new TestService();
+    
+    // Should return a Promise
+    const result = service.asyncMethod(5);
+    expect(result).toBeInstanceOf(Promise);
+    await expect(result).resolves.toBe(10);
+    
+    // Should use fallback on error
+    await expect(service.asyncMethod(-1)).resolves.toBe(0);
+  });
+
+  it('should handle promise-returning methods with @Fallback', async () => {
+    class TestService {
+      @Fallback('fallbackMethod')
+      promiseMethod(value: number) {
+        if (value < 0) {
+          return Promise.reject(new Error('negative'));
+        }
+        return Promise.resolve(value * 2);
+      }
+
+      fallbackMethod(_error: Error, _value: number) {
+        return Promise.resolve(0);
+      }
+    }
+
+    const service = new TestService();
+    
+    // Should return a Promise
+    const result = service.promiseMethod(5);
+    expect(result).toBeInstanceOf(Promise);
+    await expect(result).resolves.toBe(10);
+    
+    // Should use fallback on error
+    await expect(service.promiseMethod(-1)).resolves.toBe(0);
   });
 });
