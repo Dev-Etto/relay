@@ -471,4 +471,46 @@ describe('Class-level @UseRelay', () => {
     // Async method should be wrapped and return a Promise
     expect(service.asyncMethod()).toBeInstanceOf(Promise);
   });
+
+  it('should throw original error if fallback method does not exist in FallbackClass', async () => {
+    class FallbackService {
+      // No getData method
+    }
+
+    @FallbackClass(FallbackService)
+    class PrimaryService {
+      async getData() {
+        throw new Error('original-error');
+      }
+    }
+
+    const service = new PrimaryService();
+    await expect(service.getData()).rejects.toThrow('original-error');
+  });
+});
+
+describe('Fallback Decorator Edge Cases', () => {
+  it('should throw error if fallback method string is not found', async () => {
+    class TestService {
+      @Fallback('nonExistentMethod')
+      async failMethod() {
+        throw new Error('fail');
+      }
+    }
+
+    const service = new TestService();
+    await expect(service.failMethod()).rejects.toThrow("Fallback method 'nonExistentMethod' not found on instance");
+  });
+
+  it('should rethrow error if fallback argument is invalid', async () => {
+    class TestService {
+      @Fallback(123 as any)
+      async failMethod() {
+        throw new Error('fail');
+      }
+    }
+
+    const service = new TestService();
+    await expect(service.failMethod()).rejects.toThrow('fail');
+  });
 });
